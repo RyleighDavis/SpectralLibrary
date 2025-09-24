@@ -1,6 +1,6 @@
 # SpectralLibrary
 
-A Python package for managing ice and mineral spectra laboratory data relevant to interpreting telescope observations of icy moon surfaces.
+A Python package for managing ice and mineral laboratory spectra relevant for icy moon surfaces.
 
 ## Installation
 
