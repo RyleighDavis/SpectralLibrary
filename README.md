@@ -11,8 +11,8 @@ pip install spectral-library
 
 ### Development Installation
 ```bash
-git clone https://github.com/ryleighdavis/spectral-library.git
-cd spectral-library
+git clone https://github.com/RyleighDavis/SpectralLibrary.git
+cd SpectralLibrary
 pip install -e .
 ```
 
@@ -23,7 +23,7 @@ pip install -e .
 from spectral_library import LaboratorySpectrum, load_data, SpectralPlotter
 
 # Load spectral data
-data = load_data("your_spectra.pkl")
+data = load_data("spectra.pkl")
 
 # Create interactive plots
 plotter = SpectralPlotter()
@@ -45,8 +45,8 @@ spectral-db load-usgs /path/to/usgs/files/ /path/to/database/
 
 ### Interactive Spectral Filtering
 ```bash
-# Compatible with original filter_library.py usage
-spectral-filter your_library.pkl --spectra all --reference-file reference.txt --save-mode
+# Interactive spectral filtering and visualization
+spectral-filter library.pkl --spectra all --reference-file reference.txt --save-mode
 ```
 
 ## Features
@@ -125,7 +125,7 @@ spectral-db load-psf psf_files/ database/
 
 ### Interactive Filtering (`spectral-filter`)
 ```bash
-# View and filter spectra (compatible with original filter_library.py)
+# View and filter spectra interactively
 spectral-filter library.pkl --spectra all --save-mode
 spectral-filter library.pkl --spectra "spectrum1" "spectrum2" --reference-file ref.txt
 ```
@@ -188,8 +188,8 @@ fig.show()
 
 ### Local Installation
 ```bash
-git clone https://github.com/ryleighdavis/spectral-library.git
-cd spectral-library
+git clone https://github.com/RyleighDavis/SpectralLibrary.git
+cd SpectralLibrary
 pip install -e .[dev]
 ```
 
@@ -214,6 +214,6 @@ MIT License - see LICENSE file for details.
   title = {SpectralLibrary: A Python package for managing ice and mineral spectra laboratory data},
   author = {Davis, Ryleigh},
   year = {2024},
-  url = {https://github.com/ryleighdavis/spectral-library}
+  url = {https://github.com/RyleighDavis/SpectralLibrary}
 }
 ```

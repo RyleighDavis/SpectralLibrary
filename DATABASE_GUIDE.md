@@ -1,14 +1,14 @@
-# Database Organization Guide
+# SpectralLibrary Database Guide
 
 ## Overview
 
-You currently have ~44,000 individual JSON files in `LaboratorySpectra/`. While this works, it has several drawbacks:
-- **Slow queries**: Finding specific spectra requires scanning thousands of files
+SpectralLibrary provides an efficient database system for managing large collections of spectral data. Traditional approaches using individual files have several limitations:
+- **Slow queries**: Finding specific spectra requires scanning many files
 - **Memory intensive**: Loading large subsets requires reading many files
 - **No indexing**: Can't efficiently search by metadata
-- **Duplication**: Hard to avoid duplicate spectra
+- **Duplication**: Difficult to manage duplicate spectra
 
-The new database system provides:
+The SpectralLibrary database system provides:
 - **Fast queries**: SQLite metadata database with indices
 - **Efficient storage**: HDF5 for spectral arrays with compression
 - **Easy subsetting**: Query by any metadata field
@@ -22,7 +22,7 @@ The new database system provides:
 | **Database (SQLite + HDF5)** | **Fast queries, compressed, indexed** | **Requires setup** | **Large collections (>1000)** |
 | Single pickle file | Fast loading | Large memory usage, no partial loading | Medium collections (1000-10000) |
 
-**Recommendation**: Use the new database system for your 44k spectra.
+**Recommendation**: Use the database system for collections larger than 1000 spectra.
 
 ## Migration Process
 
@@ -32,34 +32,34 @@ The new database system provides:
 pip install h5py  # For efficient spectral data storage
 ```
 
-### 2. Migrate Your Existing JSON Files
+### 2. Migrate Existing Data
 
 ```bash
-# Create organized database from your JSON files
-python organize_database.py migrate LaboratorySpectra/ SpectralDatabase/
+# Create database from JSON files
+spectral-db migrate json_directory/ database_directory/
 
 # This will:
-# - Create SpectralDatabase/ directory
-# - Convert all JSON files to SQLite + HDF5 format
+# - Create database directory structure
+# - Convert files to SQLite + HDF5 format
 # - Add indices for fast searching
 # - Compress spectral data (saves ~50% disk space)
 ```
 
-### 3. Check Migration Results
+### 3. Check Database Status
 
 ```bash
-python organize_database.py info SpectralDatabase/
+spectral-db info database_directory/
 ```
 
-Expected output:
+Example output:
 ```
-Database: SpectralDatabase/
-Total spectra: ~44000
+Database: database_directory/
+Total spectra: 44000
 
 Sources:
   RELAB: 35000
   USGS: 5000
-  Other: 4000
+  Custom: 4000
 
 Categories:
   mineral: 30000
@@ -72,15 +72,15 @@ Categories:
 ### USGS Library
 
 ```bash
-# Download USGS text files to usgs_spectra/
-python organize_database.py load-usgs usgs_spectra/ SpectralDatabase/
+# Import USGS spectral library files
+spectral-db load-usgs usgs_directory/ database_directory/
 ```
 
 ### PSF (Planetary Science Foundation) Library
 
 ```bash
-# Download PSF text files to psf_spectra/
-python organize_database.py load-psf psf_spectra/ SpectralDatabase/
+# Import PSF spectral library files
+spectral-db load-psf psf_directory/ database_directory/
 ```
 
 ### Custom Text Files
@@ -100,7 +100,7 @@ def my_metadata_extractor(file_path, spectrum_name):
         'sample_id': file_path.stem
     }
 
-db = SpectralDatabase("SpectralDatabase/")
+db = SpectralDatabase("database_directory/")
 load_text_files_to_database(
     "my_spectra/",
     db,
@@ -112,19 +112,19 @@ load_text_files_to_database(
 
 ## Creating Project Subsets
 
-Instead of manually copying files, create subsets on-demand:
+Create focused datasets for specific research projects:
 
 ```bash
-# All ice spectra for Europa project
-python organize_database.py create-subset SpectralDatabase/ europa_ice.pkl \\
+# Ice spectra for low-temperature studies
+spectral-db create-subset database/ ice_77K.pkl \
     --category ice --temperature "77K"
 
-# Phyllosilicates for Mars project
-python organize_database.py create-subset SpectralDatabase/ mars_phyllo.pkl \\
+# Phyllosilicate minerals
+spectral-db create-subset database/ phyllosilicates.pkl \
     --mineral-type silicate --species "*phyllo*"
 
-# All RELAB meteorites
-python organize_database.py create-subset SpectralDatabase/ relab_meteorites.pkl \\
+# RELAB meteorite collection
+spectral-db create-subset database/ relab_meteorites.pkl \
     --source RELAB --category meteorite
 ```
 
@@ -136,7 +136,7 @@ python organize_database.py create-subset SpectralDatabase/ relab_meteorites.pkl
 from spectral_library import SpectralDatabase
 
 # Open database
-db = SpectralDatabase("SpectralDatabase/")
+db = SpectralDatabase("database_directory/")
 
 # Count total spectra
 print(f"Total: {db.count()}")
@@ -175,7 +175,7 @@ df = db.export_to_dataframe(ice_ids[:100])
 ### Integration with Existing Tools
 
 ```python
-# Use with your existing visualization
+# Use with visualization tools
 from spectral_library import SpectralPlotter
 
 plotter = SpectralPlotter()
@@ -193,18 +193,20 @@ filter_tool.interactive_browser()
 
 ## Directory Structure
 
-After migration, your directory will look like:
+A typical project structure:
 
 ```
-SpectralLibrary/
-├── LaboratorySpectra/           # Original JSON files (can archive)
-├── SpectralDatabase/            # New efficient database
-│   ├── metadata.db             # SQLite database for metadata
-│   ├── spectra.h5              # HDF5 file for spectral arrays
-│   └── spectrum_*.pkl          # Fallback pickle files (if HDF5 unavailable)
-├── europa_ice.pkl              # Project subset
-├── mars_phyllo.pkl             # Project subset
-└── organize_database.py        # Management script
+project_directory/
+├── data/
+│   ├── database/               # Main spectral database
+│   │   ├── metadata.db         # SQLite metadata
+│   │   ├── spectra.h5          # HDF5 spectral arrays
+│   │   └── spectrum_*.pkl      # Fallback files
+│   └── subsets/                # Project-specific datasets
+│       ├── ice_spectra.pkl     # Ice analysis subset
+│       └── minerals.pkl        # Mineral analysis subset
+├── analysis/                   # Analysis scripts
+└── results/                    # Output files
 ```
 
 ## Performance Comparison
@@ -221,48 +223,47 @@ SpectralLibrary/
 ### Regular Tasks
 
 ```bash
-# Check database health
-python organize_database.py info SpectralDatabase/
+# Check database status
+spectral-db info database/
 
-# Add new library
-python organize_database.py load-usgs new_usgs_data/ SpectralDatabase/
+# Add new spectral library
+spectral-db load-usgs new_data/ database/
 
-# Create new project subset
-python organize_database.py create-subset SpectralDatabase/ my_project.pkl --category mineral
+# Create project-specific subset
+spectral-db create-subset database/ project_data.pkl --category mineral
 ```
 
 ### Backup Strategy
 
 ```bash
-# Backup database (much smaller than JSON files)
-tar -czf spectral_backup_$(date +%Y%m%d).tar.gz SpectralDatabase/
+# Backup database
+tar -czf spectral_backup_$(date +%Y%m%d).tar.gz database/
 
-# Restore
-tar -xzf spectral_backup_20240923.tar.gz
+# Restore from backup
+tar -xzf spectral_backup_20241201.tar.gz
 ```
 
-## Migration Checklist
+## Setup Checklist
 
-- [ ] Install h5py: `pip install h5py`
-- [ ] Migrate JSON files: `python organize_database.py migrate LaboratorySpectra/ SpectralDatabase/`
-- [ ] Verify migration: `python organize_database.py info SpectralDatabase/`
-- [ ] Test loading: Try loading a few spectra in Python
-- [ ] Create project subsets: Replace your current .pkl files with database queries
-- [ ] Update notebooks: Use new database API instead of loading JSON files
-- [ ] Archive JSON files: Move `LaboratorySpectra/` to backup location
+- [ ] Install SpectralLibrary: `pip install spectral-library`
+- [ ] Migrate existing data: `spectral-db migrate source_directory/ database/`
+- [ ] Verify database: `spectral-db info database/`
+- [ ] Test loading: Load some spectra in Python to verify setup
+- [ ] Create project subsets: Generate focused datasets for analysis
+- [ ] Update analysis scripts: Use SpectralLibrary API for data access
 
 ## Troubleshooting
 
 **Q: Migration is slow**
-A: This is normal for 44k files. It should take 10-30 minutes depending on your system.
+A: This is normal for large collections. Processing time scales with the number of files.
 
 **Q: Can't install h5py**
 A: The database will work with pickle fallback, but will be slower and larger.
 
-**Q: Want to keep JSON files**
+**Q: Want to keep original files**
 A: You can keep them as backup, but use the database for day-to-day work.
 
 **Q: Need custom metadata fields**
 A: Modify the database schema in `database.py` before migration.
 
-This new system will make your spectral library much more manageable and faster to work with!
+The SpectralLibrary database system provides efficient management and fast access to large spectral collections.

@@ -1,24 +1,19 @@
-# SpectralLibrary - Organized Structure
+# SpectralLibrary - Project Organization Guide
 
-## Directory Structure
+## Recommended Project Structure
 
 ```
-SpectralLibrary/
-- data/                           # All data files
-  - database/                     # Main spectral database (SQLite + HDF5)
-  - backup/                       # Backup files
-    - original_json_archive.tar.gz  # Original JSON files (compressed)
-  - subsets/                      # Data subsets for different use cases
-    - RELAB_salts_forSam.pkl      # Europa salt spectra
-    - RELAB_meteorites.pkl        # Meteorite spectra
-    - matches_filtered_df.pkl     # Filtered spectral matches
-    - [other .pkl files]          # Additional data subsets
-- scripts/                        # Management scripts
-  - organize_database.py          # Database management
-  - migrate_existing_data.py      # Data migration tools
-- exports/                        # General export files
-- examples/                       # Usage examples
-- spectral_library/               # Python package source
+project_directory/
+├── data/
+│   ├── database/               # Main spectral database (SQLite + HDF5)
+│   ├── subsets/                # Project-specific data subsets
+│   │   ├── ice_spectra.pkl     # Ice spectral data
+│   │   ├── mineral_spectra.pkl # Mineral spectral data
+│   │   └── custom_subset.pkl   # Custom filtered datasets
+│   └── backup/                 # Backup files
+├── analysis/                   # Analysis scripts and notebooks
+├── results/                    # Output files and plots
+└── docs/                       # Project documentation
 ```
 
 ## Quick Start
@@ -40,47 +35,49 @@ spectra = db.get_spectra(ice_spectra[:10])
 
 ### Working with Data Subsets
 ```python
-# Load pre-made data subsets
+# Load data subsets for analysis
 from spectral_library import load_data
 
-# Work from any directory - just copy the files you need
-data = load_data("RELAB_salts_forSam.pkl")
+# Load specific datasets for your project
+data = load_data("ice_spectra.pkl")
 ```
 
 ### Creating New Data Subsets
 ```bash
-cd scripts/
-python organize_database.py create-subset ../data/database/ ../data/subsets/europa_ice.pkl --category ice --temperature "77K"
+# Create custom subsets using the CLI
+spectral-db create-subset data/database/ data/subsets/europa_ice.pkl --category ice --temperature "77K"
 ```
 
 ## Database Management
 
-### Check database status
+### Check Database Status
 ```bash
-cd scripts/
-python organize_database.py info ../data/database/
+# Get information about your database
+spectral-db info data/database/
 ```
 
-### Add new spectral library
+### Add New Spectral Libraries
 ```bash
-python organize_database.py load-usgs /path/to/usgs/files/ ../data/database/
+# Import data from various sources
+spectral-db load-usgs /path/to/usgs/files/ data/database/
+spectral-db load-psf /path/to/psf/files/ data/database/
 ```
 
-### Create custom subsets
+### Create Custom Subsets
 ```bash
 # Ice spectra for Europa analysis
-python organize_database.py create-subset ../data/database/ ../data/subsets/europa_ice_77K.pkl --category ice --temperature "77K"
+spectral-db create-subset data/database/ data/subsets/europa_ice_77K.pkl --category ice --temperature "77K"
 
 # Phyllosilicate minerals
-python organize_database.py create-subset ../data/database/ ../data/subsets/phyllosilicates.pkl --mineral_subtype "*phyllo*"
+spectral-db create-subset data/database/ data/subsets/phyllosilicates.pkl --mineral-type "*phyllo*"
 
-# All RELAB meteorites
-python organize_database.py create-subset ../data/database/ ../data/subsets/relab_meteorites.pkl --source "RELAB" --category meteorite
+# RELAB meteorite data
+spectral-db create-subset data/database/ data/subsets/relab_meteorites.pkl --source "RELAB" --category meteorite
 ```
 
 ## Usage as Installed Package
 
-When SpectralLibrary is installed on different computers:
+Installing and using SpectralLibrary:
 
 ```python
 # Install once
@@ -89,32 +86,32 @@ pip install spectral-library
 # Use anywhere
 from spectral_library import SpectralDatabase, load_data
 
-# Copy relevant .pkl files to your project directory
-# Then load and analyze
-data = load_data("europa_ice_77K.pkl")
+# Copy data subsets to your project directory as needed
+# Load and analyze in your scripts
+data = load_data("data/subsets/europa_ice_77K.pkl")
 ```
 
-## Available Data Subsets
+## Common Data Subset Types
 
-Current subsets in `data/subsets/`:
-- `RELAB_salts_forSam.pkl` - Salt spectra from RELAB for Europa surface analysis
-- `RELAB_meteorites.pkl` - Meteorite spectra collection
-- `RELAB_phyllosilicates.pkl` - Phyllosilicate mineral spectra
-- `matches_filtered_df.pkl` - Pre-filtered spectral matches
-- `converted_*` files - Database-migrated versions
+Typical subsets you might create:
+- **Ice spectra**: Low-temperature ice measurements for outer solar system studies
+- **Mineral spectra**: Rock and mineral samples for terrestrial planet analysis
+- **Meteorite spectra**: Meteorite and cosmic dust measurements
+- **Custom filtered sets**: Spectra matching specific criteria for targeted analysis
 
-## Backup Strategy
+## Data Management Best Practices
 
-- **Main database**: `data/database/` (SQLite + HDF5, ~1-2 GB)
-- **Original JSON backup**: `data/backup/original_json_archive.tar.gz` (~500 MB compressed)
-- **Data subsets**: Individual `.pkl` files in `data/subsets/`
+- **Main database**: Central repository for all spectral data (SQLite + HDF5)
+- **Project subsets**: Smaller, focused datasets for specific analyses
+- **Version control**: Track analysis scripts and documentation, exclude large data files
+- **Backups**: Regular backups of database and important subsets
 
-For full backup: `tar -czf spectral_backup_$(date +%Y%m%d).tar.gz data/`
+Example backup: `tar -czf spectral_backup_$(date +%Y%m%d).tar.gz data/`
 
-## Notes
+## Key Features
 
-- The main database contains all ~40,000+ spectra from your original JSON files
-- Data subsets are curated collections for specific research purposes
-- Original JSON files are preserved in compressed backup
-- The package can be installed and used on any computer
-- Data subsets are portable - copy the .pkl files you need to any project
+- **Scalable database**: Efficiently handles large spectral libraries
+- **Flexible subsets**: Create custom datasets for specific research questions
+- **Cross-platform**: Works on any system with Python 3.8+
+- **Portable data**: Data subsets can be shared and used across different projects
+- **Standard formats**: Compatible with common scientific Python tools
