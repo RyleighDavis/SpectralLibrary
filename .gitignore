@@ -73,3 +73,6 @@ htmlcov/
 
 # Documentation builds
 docs/_build/
+
+# Claude Code
+.claude/
