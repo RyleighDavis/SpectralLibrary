@@ -244,7 +244,45 @@ class SpectralDatabase:
         Parameters:
         -----------
         **criteria : dict
-            Query criteria (e.g., species='ice', category='mineral')
+            Query criteria. Supports multiple query types:
+
+            1. **Exact matches** (text/numeric fields):
+               - species='ice'
+               - category='mineral'
+               - wavelength_max=1000
+
+            2. **Text wildcards** (use * for wildcard):
+               - species='ice*'      # matches 'ice', 'ice_crystal', etc.
+               - category='*mineral' # matches 'silicate_mineral', etc.
+
+            3. **Numeric comparisons** (use double underscore syntax):
+               - wavelength_max__gt=5      # wavelength_max > 5
+               - wavelength_min__lt=1000   # wavelength_min < 1000
+               - n_points__gte=500         # n_points >= 500
+               - wavelength_max__lte=2000  # wavelength_max <= 2000
+               - n_points__ne=1024         # n_points != 1024
+
+            4. **Wavelength range** (overlaps with spectrum range):
+               - wavelength_range=(400, 800)  # spectra covering 400-800 range
+
+            **Available comparison operators:**
+            - __gt: greater than (>)
+            - __lt: less than (<)
+            - __gte: greater than or equal (>=)
+            - __lte: less than or equal (<=)
+            - __ne: not equal (!=)
+
+            **Examples:**
+            ```python
+            # Find ice spectra with wavelength_max > 1000
+            db.query(species='ice', wavelength_max__gt=1000)
+
+            # Find all mineral spectra with < 500 data points
+            db.query(category='*mineral', n_points__lt=500)
+
+            # Find spectra covering visible range with high resolution
+            db.query(wavelength_range=(400, 700), n_points__gte=1000)
+            ```
 
         Returns:
         --------
@@ -259,8 +297,31 @@ class SpectralDatabase:
         params = []
 
         for key, value in criteria.items():
-            if key in ['wavelength_min', 'wavelength_max', 'n_points']:
-                # Numeric comparisons
+            # Check for comparison operators
+            if '__' in key:
+                field, operator = key.rsplit('__', 1)
+
+                # Validate field is numeric
+                if field not in ['wavelength_min', 'wavelength_max', 'n_points']:
+                    raise ValueError(f"Comparison operators only supported for numeric fields: {field}")
+
+                # Map operators to SQL
+                op_map = {
+                    'gt': '>',
+                    'lt': '<',
+                    'gte': '>=',
+                    'lte': '<=',
+                    'ne': '!='
+                }
+
+                if operator not in op_map:
+                    raise ValueError(f"Unsupported operator: {operator}. Use: {list(op_map.keys())}")
+
+                where_clauses.append(f"{field} {op_map[operator]} ?")
+                params.append(value)
+
+            elif key in ['wavelength_min', 'wavelength_max', 'n_points']:
+                # Numeric equality comparisons
                 where_clauses.append(f"{key} = ?")
                 params.append(value)
             elif key == 'wavelength_range':

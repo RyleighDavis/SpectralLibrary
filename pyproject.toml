@@ -63,6 +63,9 @@ spectral-db = "spectral_library.database_cli:main"
 [tool.setuptools]
 packages = ["spectral_library"]
 
+[tool.setuptools.package-data]
+spectral_library = ["data/**/*"]
+
 
 [tool.black]
 line-length = 88
