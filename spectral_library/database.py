@@ -349,6 +349,10 @@ class SpectralDatabase:
                     # Build OR clauses for list values
                     or_clauses = []
                     for v in value:
+                        # Ensure v is not a list/tuple itself
+                        if isinstance(v, (list, tuple)):
+                            raise ValueError(f"Nested list/tuple not supported: {v} in {value}")
+
                         if '*' in str(v):
                             or_clauses.append(f"{key} LIKE ?")
                             params.append(str(v).replace('*', '%'))
@@ -359,6 +363,10 @@ class SpectralDatabase:
                     if or_clauses:
                         where_clauses.append(f"({' OR '.join(or_clauses)})")
                 else:
+                    # Ensure value is not accidentally a list
+                    if isinstance(value, (list, tuple)):
+                        raise ValueError(f"Unexpected list/tuple in non-list branch: {value}")
+
                     # Text comparisons (with wildcards)
                     if '*' in str(value):
                         where_clauses.append(f"{key} LIKE ?")
@@ -371,7 +379,14 @@ class SpectralDatabase:
         if where_clauses:
             query += " WHERE " + " AND ".join(where_clauses)
 
-        cursor.execute(query, params)
+        # Defensive check: ensure no lists are passed as parameters
+        safe_params = []
+        for i, param in enumerate(params):
+            if isinstance(param, (list, tuple)):
+                raise ValueError(f"Parameter {i} is unexpectedly a {type(param).__name__}: {param}. This should not happen.")
+            safe_params.append(param)
+
+        cursor.execute(query, safe_params)
         results = [row[0] for row in cursor.fetchall()]
 
         conn.close()
