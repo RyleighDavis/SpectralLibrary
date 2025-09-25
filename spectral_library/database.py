@@ -331,15 +331,15 @@ class SpectralDatabase:
                 where_clauses.append(f"{field} {op_map[operator]} ?")
                 params.append(value)
 
+            elif key == 'wavelength_range':
+                # Special case for wavelength range (handle before list check)
+                min_wl, max_wl = value
+                where_clauses.append("wavelength_min <= ? AND wavelength_max >= ?")
+                params.extend([max_wl, min_wl])
             elif key in ['wavelength_min', 'wavelength_max', 'n_points']:
                 # Numeric equality comparisons
                 where_clauses.append(f"{key} = ?")
                 params.append(value)
-            elif key == 'wavelength_range':
-                # Special case for wavelength range
-                min_wl, max_wl = value
-                where_clauses.append("wavelength_min <= ? AND wavelength_max >= ?")
-                params.extend([max_wl, min_wl])
             else:
                 # Handle list values (OR conditions)
                 if isinstance(value, (list, tuple)):
