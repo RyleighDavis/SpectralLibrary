@@ -35,6 +35,13 @@ spectra = db.get_spectra(ice_spectra[:10])
 
 ### Working with Data Subsets
 ```python
+# Create and save a subset from query results
+mir_specs = db.query(wavelength_range=(5, 12))  # only spectra that have data in the 5-12 um range
+lib = db.export_to_dataframe(mir_specs)
+
+# Save the subset to data/subsets directory
+lib.to_pickle("data/subsets/mir_5_12um.pkl")
+
 # Load data subsets for analysis
 from spectral_library import load_data
 
