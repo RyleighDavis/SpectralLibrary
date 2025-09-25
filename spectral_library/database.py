@@ -251,18 +251,23 @@ class SpectralDatabase:
                - category='mineral'
                - wavelength_max=1000
 
-            2. **Text wildcards** (use * for wildcard):
+            2. **List values** (OR conditions for text fields):
+               - category=['ice', 'mineral']         # category='ice' OR category='mineral'
+               - species=['water*', 'co2']           # species LIKE 'water%' OR species='co2'
+               - source=['USGS', 'PSF', 'RELAB']     # matches any of the specified sources
+
+            3. **Text wildcards** (use * for wildcard):
                - species='ice*'      # matches 'ice', 'ice_crystal', etc.
                - category='*mineral' # matches 'silicate_mineral', etc.
 
-            3. **Numeric comparisons** (use double underscore syntax):
+            4. **Numeric comparisons** (use double underscore syntax):
                - wavelength_max__gt=5      # wavelength_max > 5
                - wavelength_min__lt=1000   # wavelength_min < 1000
                - n_points__gte=500         # n_points >= 500
                - wavelength_max__lte=2000  # wavelength_max <= 2000
                - n_points__ne=1024         # n_points != 1024
 
-            4. **Wavelength range** (overlaps with spectrum range):
+            5. **Wavelength range** (overlaps with spectrum range):
                - wavelength_range=(400, 800)  # spectra covering 400-800 range
 
             **Available comparison operators:**
@@ -277,8 +282,14 @@ class SpectralDatabase:
             # Find ice spectra with wavelength_max > 1000
             db.query(species='ice', wavelength_max__gt=1000)
 
+            # Find spectra from multiple categories
+            db.query(category=['ice', 'mineral', 'meteorite'])
+
             # Find all mineral spectra with < 500 data points
             db.query(category='*mineral', n_points__lt=500)
+
+            # Find spectra from specific sources with wildcards
+            db.query(source=['USGS', 'PSF'], species='*ice*')
 
             # Find spectra covering visible range with high resolution
             db.query(wavelength_range=(400, 700), n_points__gte=1000)
@@ -330,13 +341,31 @@ class SpectralDatabase:
                 where_clauses.append("wavelength_min <= ? AND wavelength_max >= ?")
                 params.extend([max_wl, min_wl])
             else:
-                # Text comparisons (with wildcards)
-                if '*' in str(value):
-                    where_clauses.append(f"{key} LIKE ?")
-                    params.append(str(value).replace('*', '%'))
+                # Handle list values (OR conditions)
+                if isinstance(value, (list, tuple)):
+                    if len(value) == 0:
+                        continue  # Skip empty lists
+
+                    # Build OR clauses for list values
+                    or_clauses = []
+                    for v in value:
+                        if '*' in str(v):
+                            or_clauses.append(f"{key} LIKE ?")
+                            params.append(str(v).replace('*', '%'))
+                        else:
+                            or_clauses.append(f"{key} = ?")
+                            params.append(v)
+
+                    if or_clauses:
+                        where_clauses.append(f"({' OR '.join(or_clauses)})")
                 else:
-                    where_clauses.append(f"{key} = ?")
-                    params.append(value)
+                    # Text comparisons (with wildcards)
+                    if '*' in str(value):
+                        where_clauses.append(f"{key} LIKE ?")
+                        params.append(str(value).replace('*', '%'))
+                    else:
+                        where_clauses.append(f"{key} = ?")
+                        params.append(value)
 
         query = "SELECT id FROM spectra_metadata"
         if where_clauses:
